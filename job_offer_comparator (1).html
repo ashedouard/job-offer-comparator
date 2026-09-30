@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Offer Valuation Engine | Executive Decision Model</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for tabular financial figures -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for corporate data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            corporate: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+              400: '#94a3b8',
+              500: '#64748b',
+              600: '#475569',
+              700: '#334155',
+              800: '#1e293b',
+              900: '#0f172a',
+            },
+            offerA: {
+              badge: '#0369a1',
+              accent: '#0284c7',
+              pill: '#e0f2fe',
+              border: '#bae6fd',
+              navy: '#0c4a6e',
+            },
+            offerB: {
+              badge: '#4338ca',
+              accent: '#6366f1',
+              pill: '#e0e7ff',
+              border: '#c7d2fe',
+              navy: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Tabular figures for reliable financial alignment */
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    /* Sleek, professional slider track and thumb */
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+    .slider-offer-a::-webkit-slider-thumb {
+      background: #0284c7;
+    }
+    .slider-offer-b::-webkit-slider-thumb {
+      background: #4f46e5;
+    }
+  </style>
+</head>
+<body class="bg-slate-50/70 text-slate-800 antialiased min-h-screen flex flex-col font-sans selection:bg-slate-200">
+  
+  <!-- Executive Top Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-7 h-7 rounded bg-slate-900 flex items-center justify-center text-white text-xs font-mono font-bold tracking-tight">
+          EC
+        </div>
+        <div class="flex items-baseline space-x-2">
+          <span class="text-sm font-semibold tracking-tight text-slate-900">Effective Compensation Model</span>
+          <span class="text-xs text-slate-400 font-mono hidden sm:inline">| Sensitivity &amp; Friction Engine</span>
+        </div>
+      </div>
+
+      <!-- Action items -->
+      <div class="flex items-center gap-2">
+        <button id="assumptionsBtn" class="inline-flex items-center gap-1.5 px-2.5 py-1.2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 transition">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+          </svg>
+          <span>Model Assumptions</span>
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        </button>
+
+        <button id="presetBtn" class="inline-flex items-center gap-1 px-2.5 py-1.2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-600 transition">
+          <span>Reset Defaults</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subtle Metadata & Parameters Bar -->
+  <div class="bg-white border-b border-slate-200/80 text-slate-600 text-xs py-2 px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-1 gap-x-4">
+      <div class="flex items-center gap-3 text-[11px] font-mono text-slate-500">
+        <span class="font-semibold text-slate-700 uppercase tracking-wider font-sans">Active Valuation Constants:</span>
+        <span class="border-l border-slate-200 pl-3">Transit: <strong class="text-slate-800">$20/day</strong></span>
+        <span class="border-l border-slate-200 pl-3">Time Value: <strong class="text-slate-800">$25/hr</strong></span>
+        <span class="border-l border-slate-200 pl-3">Working Weeks: <strong class="text-slate-800">50 wks/yr</strong></span>
+      </div>
+      <div class="text-[11px] text-slate-400 font-mono hidden md:block">
+        Live Sensitivity Computation &bull; Real-time
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- Primary Executive Result / Delta Summary Banner -->
+    <section id="winnerBanner" class="bg-white rounded-lg border border-slate-200 p-5 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)]"></section>
+
+    <!-- Side-by-Side Offer Comparison Deck -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- ================= OFFER A PANEL ================= -->
+      <section class="bg-white rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col">
+        <!-- Panel Header -->
+        <div class="p-4 sm:px-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+          <div class="flex items-center gap-2.5 flex-1 mr-3">
+            <span class="w-6 h-6 rounded bg-sky-700 text-white font-mono font-bold flex items-center justify-center text-xs shrink-0">A</span>
+            <input type="text" id="offerAName" value="Offer A (Remote / Hybrid Baseline)" 
+              class="font-semibold text-slate-900 text-sm bg-transparent border-b border-transparent hover:border-slate-300 focus:border-sky-600 focus:outline-none transition w-full py-0.5">
+          </div>
+          <span class="text-[11px] font-mono uppercase tracking-wider text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 shrink-0">Baseline</span>
+        </div>
+
+        <!-- Inputs / Levers Section -->
+        <div class="p-5 space-y-5 border-b border-slate-200 bg-white">
+          
+          <!-- Base Salary Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="salaryA" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Gross Base Salary</label>
+              <div class="font-mono font-semibold text-slate-900 text-base tabular-nums">
+                $<span id="salaryADisplay">110,000</span>
+              </div>
+            </div>
+            <input type="range" id="salaryA" min="40000" max="250000" step="1000" value="110000" class="w-full slider-offer-a">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono tabular-nums">
+              <span>$40,000</span>
+              <span>$145,000</span>
+              <span>$250,000</span>
+            </div>
+          </div>
+
+          <!-- Remote Days Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="remoteA" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Remote Days / Week</label>
+              <div class="font-mono font-semibold text-slate-900 text-sm tabular-nums">
+                <span id="remoteADisplay">4</span> <span class="text-xs font-normal text-slate-500">days remote</span>
+              </div>
+            </div>
+            <input type="range" id="remoteA" min="0" max="5" step="1" value="4" class="w-full slider-offer-a">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>0 (Full Office)</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5 (100% Remote)</span>
+            </div>
+            <p id="officeDaysSummaryA" class="text-[11px] text-slate-500 mt-1 font-mono"></p>
+          </div>
+
+          <!-- Commute Time Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="commuteA" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Round-Trip Commute (In-Office Day)</label>
+              <div class="font-mono font-semibold text-slate-900 text-sm tabular-nums">
+                <span id="commuteADisplay">40</span> <span class="text-xs font-normal text-slate-500">min / day</span>
+              </div>
+            </div>
+            <input type="range" id="commuteA" min="0" max="180" step="5" value="40" class="w-full slider-offer-a">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>0 min</span>
+              <span>60 min (1 hr)</span>
+              <span>120 min (2 hrs)</span>
+              <span>180 min</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Breakdown Table -->
+        <div class="p-5 bg-slate-50/40 flex-1 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Friction &amp; Commute Accounting</div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              
+              <!-- Metric 1: Annual Commute Time -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Annual Commute Time</span>
+                <span class="text-base font-semibold font-mono text-slate-900 mt-0.5 block tabular-nums" id="metricHoursA">-- hrs</span>
+                <span class="text-[10px] text-slate-400 font-mono block" id="metricHoursAEquivalent">-- 8-hr days</span>
+              </div>
+
+              <!-- Metric 2: Annual Commute Cost -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Annual Transit Cash</span>
+                <span class="text-base font-semibold font-mono text-slate-700 mt-0.5 block tabular-nums" id="metricTransitCostA">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">@ $20/office day</span>
+              </div>
+
+              <!-- Metric 3: Commute Time Value -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Commute Time Value</span>
+                <span class="text-base font-semibold font-mono text-slate-700 mt-0.5 block tabular-nums" id="metricTimeValA">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">@ $25/commute hr</span>
+              </div>
+
+              <!-- Metric 4: Total Commute Deduction -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Total Commute Friction</span>
+                <span class="text-base font-semibold font-mono text-rose-700 mt-0.5 block tabular-nums" id="metricTotalDeductionA">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">Transit Cash + Time Val</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlight Effective Compensation Card -->
+          <div class="bg-slate-900 text-white rounded p-4 border border-slate-900">
+            <div class="flex items-end justify-between">
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-0.5">Effective Compensation</span>
+                <div class="text-2xl sm:text-3xl font-bold font-mono tracking-tight tabular-nums text-white" id="effectiveCompA">$0</div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-0.5">Effective Hourly Rate</span>
+                <div class="text-base font-mono font-semibold tabular-nums text-slate-200" id="effectiveHourlyA">$0.00/hr</div>
+              </div>
+            </div>
+            
+            <!-- Progress representation -->
+            <div class="w-full bg-slate-800 rounded-full h-1 mt-3.5 overflow-hidden">
+              <div id="retentionBarA" class="bg-sky-400 h-full rounded-full transition-all duration-300" style="width: 85%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1.5">
+              <span>Gross: $<span id="grossSalaryAInline" class="tabular-nums">0</span></span>
+              <span id="retentionPercentA" class="tabular-nums">0% retained</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ================= OFFER B PANEL ================= -->
+      <section class="bg-white rounded-lg border border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col">
+        <!-- Panel Header -->
+        <div class="p-4 sm:px-5 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
+          <div class="flex items-center gap-2.5 flex-1 mr-3">
+            <span class="w-6 h-6 rounded bg-indigo-700 text-white font-mono font-bold flex items-center justify-center text-xs shrink-0">B</span>
+            <input type="text" id="offerBName" value="Offer B (Higher Salary / In-Office)" 
+              class="font-semibold text-slate-900 text-sm bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-600 focus:outline-none transition w-full py-0.5">
+          </div>
+          <span class="text-[11px] font-mono uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 shrink-0">Comparison</span>
+        </div>
+
+        <!-- Inputs / Levers Section -->
+        <div class="p-5 space-y-5 border-b border-slate-200 bg-white">
+          
+          <!-- Base Salary Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="salaryB" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Gross Base Salary</label>
+              <div class="font-mono font-semibold text-slate-900 text-base tabular-nums">
+                $<span id="salaryBDisplay">130,000</span>
+              </div>
+            </div>
+            <input type="range" id="salaryB" min="40000" max="250000" step="1000" value="130000" class="w-full slider-offer-b">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono tabular-nums">
+              <span>$40,000</span>
+              <span>$145,000</span>
+              <span>$250,000</span>
+            </div>
+          </div>
+
+          <!-- Remote Days Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="remoteB" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Remote Days / Week</label>
+              <div class="font-mono font-semibold text-slate-900 text-sm tabular-nums">
+                <span id="remoteBDisplay">1</span> <span class="text-xs font-normal text-slate-500">days remote</span>
+              </div>
+            </div>
+            <input type="range" id="remoteB" min="0" max="5" step="1" value="1" class="w-full slider-offer-b">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>0 (Full Office)</span>
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5 (100% Remote)</span>
+            </div>
+            <p id="officeDaysSummaryB" class="text-[11px] text-slate-500 mt-1 font-mono"></p>
+          </div>
+
+          <!-- Commute Time Slider -->
+          <div>
+            <div class="flex justify-between items-baseline mb-1.5">
+              <label for="commuteB" class="text-xs font-medium text-slate-600 uppercase tracking-wider">Round-Trip Commute (In-Office Day)</label>
+              <div class="font-mono font-semibold text-slate-900 text-sm tabular-nums">
+                <span id="commuteBDisplay">90</span> <span class="text-xs font-normal text-slate-500">min / day</span>
+              </div>
+            </div>
+            <input type="range" id="commuteB" min="0" max="180" step="5" value="90" class="w-full slider-offer-b">
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span>0 min</span>
+              <span>60 min (1 hr)</span>
+              <span>120 min (2 hrs)</span>
+              <span>180 min</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Breakdown Table -->
+        <div class="p-5 bg-slate-50/40 flex-1 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Friction &amp; Commute Accounting</div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              
+              <!-- Metric 1: Annual Commute Time -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Annual Commute Time</span>
+                <span class="text-base font-semibold font-mono text-slate-900 mt-0.5 block tabular-nums" id="metricHoursB">-- hrs</span>
+                <span class="text-[10px] text-slate-400 font-mono block" id="metricHoursBEquivalent">-- 8-hr days</span>
+              </div>
+
+              <!-- Metric 2: Annual Commute Cost -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Annual Transit Cash</span>
+                <span class="text-base font-semibold font-mono text-slate-700 mt-0.5 block tabular-nums" id="metricTransitCostB">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">@ $20/office day</span>
+              </div>
+
+              <!-- Metric 3: Commute Time Value -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Commute Time Value</span>
+                <span class="text-base font-semibold font-mono text-slate-700 mt-0.5 block tabular-nums" id="metricTimeValB">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">@ $25/commute hr</span>
+              </div>
+
+              <!-- Metric 4: Total Commute Deduction -->
+              <div class="p-3 bg-white rounded border border-slate-200">
+                <span class="text-[11px] text-slate-500 block">Total Commute Friction</span>
+                <span class="text-base font-semibold font-mono text-rose-700 mt-0.5 block tabular-nums" id="metricTotalDeductionB">--</span>
+                <span class="text-[10px] text-slate-400 font-mono block">Transit Cash + Time Val</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highlight Effective Compensation Card -->
+          <div class="bg-slate-900 text-white rounded p-4 border border-slate-900">
+            <div class="flex items-end justify-between">
+              <div>
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-0.5">Effective Compensation</span>
+                <div class="text-2xl sm:text-3xl font-bold font-mono tracking-tight tabular-nums text-white" id="effectiveCompB">$0</div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-0.5">Effective Hourly Rate</span>
+                <div class="text-base font-mono font-semibold tabular-nums text-slate-200" id="effectiveHourlyB">$0.00/hr</div>
+              </div>
+            </div>
+            
+            <!-- Progress representation -->
+            <div class="w-full bg-slate-800 rounded-full h-1 mt-3.5 overflow-hidden">
+              <div id="retentionBarB" class="bg-indigo-400 h-full rounded-full transition-all duration-300" style="width: 85%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1.5">
+              <span>Gross: $<span id="grossSalaryBInline" class="tabular-nums">0</span></span>
+              <span id="retentionPercentB" class="tabular-nums">0% retained</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Analytics Deck: Stacked Breakdown & Key Takeaway -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Breakdown Stacked Bar Chart -->
+      <div class="lg:col-span-2 bg-white rounded-lg border border-slate-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-sm font-semibold text-slate-900">Gross Compensation Decomposition</h3>
+            <p class="text-xs text-slate-500">Deconstructing gross base salary into net effective yield vs. friction components</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-mono text-slate-600">
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-xs bg-slate-900"></span>Net Effective</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-xs bg-slate-400"></span>Transit Cash</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-xs bg-amber-500"></span>Time Value</span>
+          </div>
+        </div>
+        <div class="relative h-60 sm:h-68 w-full">
+          <canvas id="breakdownChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Analytical Takeaway & Scenarios -->
+      <div class="bg-white rounded-lg border border-slate-200 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-4">
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Executive Summary</div>
+          <div id="insightCard" class="p-3.5 rounded border text-xs leading-relaxed space-y-2">
+            <!-- Dynamically injected -->
+          </div>
+        </div>
+
+        <!-- Presets Quick Matrix -->
+        <div>
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Scenario Benchmark Templates</div>
+          <div class="grid grid-cols-1 gap-1.5 font-mono text-xs">
+            <button onclick="applyPreset('remoteVsOffice')" class="text-left px-3 py-2 rounded border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition flex items-center justify-between group">
+              <span class="text-slate-700 font-sans text-xs">Remote ($110k) vs. In-Office ($130k, 90m)</span>
+              <span class="text-slate-400 group-hover:text-slate-700">&rarr;</span>
+            </button>
+            <button onclick="applyPreset('equalPayHybrid')" class="text-left px-3 py-2 rounded border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition flex items-center justify-between group">
+              <span class="text-slate-700 font-sans text-xs">Equal Pay: 4 Days Remote vs. 5 Days Office</span>
+              <span class="text-slate-400 group-hover:text-slate-700">&rarr;</span>
+            </button>
+            <button onclick="applyPreset('superCommuter')" class="text-left px-3 py-2 rounded border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition flex items-center justify-between group">
+              <span class="text-slate-700 font-sans text-xs">Super-Commuter ($160k, 2.5 hr/day commute)</span>
+              <span class="text-slate-400 group-hover:text-slate-700">&rarr;</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Detailed Mathematical Specification Box -->
+    <div class="bg-white rounded-lg border border-slate-200 p-4 text-slate-600 text-xs shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+      <div class="cursor-pointer flex items-center justify-between" onclick="toggleDetails()">
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span class="font-semibold text-slate-800">Financial Methodology &amp; Mathematical Specification</span>
+        </div>
+        <span id="detailsToggleIcon" class="text-slate-400 font-mono text-[11px]">▼ Show specification</span>
+      </div>
+
+      <div id="detailsContent" class="hidden mt-3 pt-3 border-t border-slate-100 space-y-2 text-slate-600">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-[11px]">
+          <div class="p-2.5 bg-slate-50 rounded border border-slate-200/80">
+            <strong class="text-slate-900 block font-sans text-xs mb-1">1. Commute Duration (Hrs)</strong>
+            <span>(5 &minus; Remote Days) &times; 50 wks &times; (Commute Mins &divide; 60)</span>
+          </div>
+          <div class="p-2.5 bg-slate-50 rounded border border-slate-200/80">
+            <strong class="text-slate-900 block font-sans text-xs mb-1">2. Commute Cash Cost</strong>
+            <span>(5 &minus; Remote Days) &times; 50 wks &times; $20.00/day</span>
+          </div>
+          <div class="p-2.5 bg-slate-50 rounded border border-slate-200/80">
+            <strong class="text-slate-900 block font-sans text-xs mb-1">3. Effective Compensation</strong>
+            <span>Time Value = Hours &times; $25/hr<br>Effective = Gross Base &minus; Transit Cash &minus; Time Value</span>
+          </div>
+        </div>
+        <p class="text-slate-500 text-[11px] leading-relaxed pt-1">
+          * Note: <strong>Effective Hourly Rate</strong> is computed as <code class="bg-slate-100 px-1 py-0.5 rounded text-slate-800">(Base Salary &minus; Transit Cash Cost) &divide; (2,000 Annual Work Hours + Annual Commute Hours)</code>, preventing double-counting of commute time penalties while standardizing across total committed hours.
+        </p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Clean Modal for Assumptions Tweaking -->
+  <div id="assumptionsModal" class="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-sm w-full p-5 shadow-xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-semibold text-slate-900 text-sm">Model Assumptions</h3>
+          <p class="text-[11px] text-slate-500">Configure global financial baseline parameters</p>
+        </div>
+        <button id="closeModalBtn" class="text-slate-400 hover:text-slate-600 p-1 text-lg leading-none">&times;</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-medium text-slate-700 block mb-1">Transit Cost per In-Office Day ($)</label>
+          <input type="number" id="inputDailyCost" value="20" min="0" max="150" class="w-full px-2.5 py-1.5 border border-slate-200 rounded font-mono text-sm focus:border-slate-800 focus:outline-none">
+        </div>
+        <div>
+          <label class="font-medium text-slate-700 block mb-1">Personal Time Value ($ / hour)</label>
+          <input type="number" id="inputTimeVal" value="25" min="0" max="250" class="w-full px-2.5 py-1.5 border border-slate-200 rounded font-mono text-sm focus:border-slate-800 focus:outline-none">
+        </div>
+        <div>
+          <label class="font-medium text-slate-700 block mb-1">Working Weeks per Year</label>
+          <input type="number" id="inputWeeks" value="50" min="20" max="52" class="w-full px-2.5 py-1.5 border border-slate-200 rounded font-mono text-sm focus:border-slate-800 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="pt-2 flex gap-2">
+        <button id="saveAssumptionsBtn" class="flex-1 py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-xs font-medium transition">Apply Changes</button>
+        <button id="resetAssumptionsBtn" class="py-1.5 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded text-xs font-medium transition">Restore Defaults</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configurable assumptions with specified defaults
+    let config = {
+      dailyCost: 20,       // $20 per office day
+      timeRate: 25,        // $25 per hour of commute time
+      workingWeeks: 50,    // 50 working weeks per year
+      workHoursPerWeek: 40 // Standard baseline work hours (2,000 hrs/yr)
+    };
+
+    // DOM Elements - Offer A
+    const salaryA = document.getElementById('salaryA');
+    const remoteA = document.getElementById('remoteA');
+    const commuteA = document.getElementById('commuteA');
+    const salaryADisplay = document.getElementById('salaryADisplay');
+    const remoteADisplay = document.getElementById('remoteADisplay');
+    const commuteADisplay = document.getElementById('commuteADisplay');
+    const officeDaysSummaryA = document.getElementById('officeDaysSummaryA');
+    const metricHoursA = document.getElementById('metricHoursA');
+    const metricHoursAEquivalent = document.getElementById('metricHoursAEquivalent');
+    const metricTransitCostA = document.getElementById('metricTransitCostA');
+    const metricTimeValA = document.getElementById('metricTimeValA');
+    const metricTotalDeductionA = document.getElementById('metricTotalDeductionA');
+    const effectiveCompA = document.getElementById('effectiveCompA');
+    const effectiveHourlyA = document.getElementById('effectiveHourlyA');
+    const grossSalaryAInline = document.getElementById('grossSalaryAInline');
+    const retentionBarA = document.getElementById('retentionBarA');
+    const retentionPercentA = document.getElementById('retentionPercentA');
+
+    // DOM Elements - Offer B
+    const salaryB = document.getElementById('salaryB');
+    const remoteB = document.getElementById('remoteB');
+    const commuteB = document.getElementById('commuteB');
+    const salaryBDisplay = document.getElementById('salaryBDisplay');
+    const remoteBDisplay = document.getElementById('remoteBDisplay');
+    const commuteBDisplay = document.getElementById('commuteBDisplay');
+    const officeDaysSummaryB = document.getElementById('officeDaysSummaryB');
+    const metricHoursB = document.getElementById('metricHoursB');
+    const metricHoursBEquivalent = document.getElementById('metricHoursBEquivalent');
+    const metricTransitCostB = document.getElementById('metricTransitCostB');
+    const metricTimeValB = document.getElementById('metricTimeValB');
+    const metricTotalDeductionB = document.getElementById('metricTotalDeductionB');
+    const effectiveCompB = document.getElementById('effectiveCompB');
+    const effectiveHourlyB = document.getElementById('effectiveHourlyB');
+    const grossSalaryBInline = document.getElementById('grossSalaryBInline');
+    const retentionBarB = document.getElementById('retentionBarB');
+    const retentionPercentB = document.getElementById('retentionPercentB');
+
+    // UI elements
+    const winnerBanner = document.getElementById('winnerBanner');
+    const insightCard = document.getElementById('insightCard');
+    const offerAName = document.getElementById('offerAName');
+    const offerBName = document.getElementById('offerBName');
+
+    // Modal elements
+    const assumptionsModal = document.getElementById('assumptionsModal');
+    const assumptionsBtn = document.getElementById('assumptionsBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const saveAssumptionsBtn = document.getElementById('saveAssumptionsBtn');
+    const resetAssumptionsBtn = document.getElementById('resetAssumptionsBtn');
+    const presetBtn = document.getElementById('presetBtn');
+    const inputDailyCost = document.getElementById('inputDailyCost');
+    const inputTimeVal = document.getElementById('inputTimeVal');
+    const inputWeeks = document.getElementById('inputWeeks');
+
+    let comparisonChart = null;
+
+    // Formatting utilities
+    const formatCurrency = (val) => {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(val);
+    };
+
+    const formatNumber = (val) => {
+      return new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(val);
+    };
+
+    function calculateOffer(salary, remoteDays, commuteMinutesRoundTrip) {
+      const officeDaysPerWeek = Math.max(0, 5 - remoteDays);
+      const totalOfficeDays = officeDaysPerWeek * config.workingWeeks;
+      
+      // 1. Annual Commute Hours
+      const dailyCommuteHours = commuteMinutesRoundTrip / 60;
+      const annualCommuteHours = totalOfficeDays * dailyCommuteHours;
+      
+      // 2. Annual Commute Cash Cost ($20 / in-office day)
+      const annualTransitCost = totalOfficeDays * config.dailyCost;
+      
+      // 3. Commute Time Value ($25 / hr)
+      const annualTimeValue = annualCommuteHours * config.timeRate;
+      
+      // 4. Total Friction (Cash + Time)
+      const totalFriction = annualTransitCost + annualTimeValue;
+      
+      // 5. Effective Compensation
+      const effectiveCompensation = salary - annualTransitCost - annualTimeValue;
+
+      // Retention %
+      const retentionPct = salary > 0 ? Math.max(0, (effectiveCompensation / salary) * 100) : 0;
+
+      // 6. Effective Hourly Rate (Without double-counting commute time):
+      // (Base Salary - Commute Cash Cost) / (Annual Work Hours + Annual Commute Hours)
+      const baseWorkHours = config.workingWeeks * config.workHoursPerWeek;
+      const totalCommittedHours = baseWorkHours + annualCommuteHours;
+      const netCashAfterTransit = salary - annualTransitCost;
+      const effectiveHourly = totalCommittedHours > 0 ? (netCashAfterTransit / totalCommittedHours) : 0;
+
+      return {
+        salary,
+        remoteDays,
+        commuteMinutesRoundTrip,
+        officeDaysPerWeek,
+        totalOfficeDays,
+        annualCommuteHours,
+        annualTransitCost,
+        annualTimeValue,
+        totalFriction,
+        effectiveCompensation,
+        retentionPct,
+        totalCommittedHours,
+        effectiveHourly
+      };
+    }
+
+    function updateDashboard() {
+      // 1. Fetch values
+      const valSalaryA = parseFloat(salaryA.value);
+      const valRemoteA = parseInt(remoteA.value, 10);
+      const valCommuteA = parseFloat(commuteA.value);
+
+      const valSalaryB = parseFloat(salaryB.value);
+      const valRemoteB = parseInt(remoteB.value, 10);
+      const valCommuteB = parseFloat(commuteB.value);
+
+      // 2. Update slider indicators
+      salaryADisplay.textContent = Number(valSalaryA).toLocaleString();
+      remoteADisplay.textContent = valRemoteA;
+      commuteADisplay.textContent = valCommuteA;
+      officeDaysSummaryA.textContent = `${5 - valRemoteA} office day${(5 - valRemoteA) === 1 ? '' : 's'}/wk (${(5 - valRemoteA) * config.workingWeeks} trips/yr)`;
+
+      salaryBDisplay.textContent = Number(valSalaryB).toLocaleString();
+      remoteBDisplay.textContent = valRemoteB;
+      commuteBDisplay.textContent = valCommuteB;
+      officeDaysSummaryB.textContent = `${5 - valRemoteB} office day${(5 - valRemoteB) === 1 ? '' : 's'}/wk (${(5 - valRemoteB) * config.workingWeeks} trips/yr)`;
+
+      // 3. Compute metrics
+      const resA = calculateOffer(valSalaryA, valRemoteA, valCommuteA);
+      const resB = calculateOffer(valSalaryB, valRemoteB, valCommuteB);
+
+      // 4. Update Offer A DOM
+      metricHoursA.textContent = `${formatNumber(resA.annualCommuteHours)} hrs`;
+      metricHoursAEquivalent.textContent = `≈ ${(resA.annualCommuteHours / 8).toFixed(1)} standard workdays`;
+      metricTransitCostA.textContent = `-${formatCurrency(resA.annualTransitCost)}`;
+      metricTimeValA.textContent = `-${formatCurrency(resA.annualTimeValue)}`;
+      metricTotalDeductionA.textContent = `-${formatCurrency(resA.totalFriction)}`;
+      effectiveCompA.textContent = formatCurrency(resA.effectiveCompensation);
+      effectiveHourlyA.textContent = `$${resA.effectiveHourly.toFixed(2)}/hr`;
+      grossSalaryAInline.textContent = Number(resA.salary).toLocaleString();
+      retentionBarA.style.width = `${Math.min(100, Math.max(0, resA.retentionPct))}%`;
+      retentionPercentA.textContent = `${resA.retentionPct.toFixed(1)}% kept`;
+
+      // 5. Update Offer B DOM
+      metricHoursB.textContent = `${formatNumber(resB.annualCommuteHours)} hrs`;
+      metricHoursBEquivalent.textContent = `≈ ${(resB.annualCommuteHours / 8).toFixed(1)} standard workdays`;
+      metricTransitCostB.textContent = `-${formatCurrency(resB.annualTransitCost)}`;
+      metricTimeValB.textContent = `-${formatCurrency(resB.annualTimeValue)}`;
+      metricTotalDeductionB.textContent = `-${formatCurrency(resB.totalFriction)}`;
+      effectiveCompB.textContent = formatCurrency(resB.effectiveCompensation);
+      effectiveHourlyB.textContent = `$${resB.effectiveHourly.toFixed(2)}/hr`;
+      grossSalaryBInline.textContent = Number(resB.salary).toLocaleString();
+      retentionBarB.style.width = `${Math.min(100, Math.max(0, resB.retentionPct))}%`;
+      retentionPercentB.textContent = `${resB.retentionPct.toFixed(1)}% kept`;
+
+      // 6. Update Winner Banner & Insights
+      updateComparisonBanner(resA, resB);
+
+      // 7. Update Chart
+      updateChart(resA, resB);
+    }
+
+    function updateComparisonBanner(resA, resB) {
+      const nameA = offerAName.value.trim() || "Offer A";
+      const nameB = offerBName.value.trim() || "Offer B";
+
+      const diffEffective = resA.effectiveCompensation - resB.effectiveCompensation;
+      const isTie = Math.abs(diffEffective) < 1;
+      const aIsBetter = diffEffective > 0;
+      const winnerName = aIsBetter ? nameA : nameB;
+      const leadAmount = Math.abs(diffEffective);
+      const higherEffectiveComp = Math.max(resA.effectiveCompensation, resB.effectiveCompensation);
+      const lowerEffectiveComp = Math.min(resA.effectiveCompensation, resB.effectiveCompensation);
+      const pctLead = lowerEffectiveComp > 0 ? ((leadAmount / lowerEffectiveComp) * 100).toFixed(1) : "0.0";
+
+      if (isTie) {
+        winnerBanner.innerHTML = `
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-[11px] font-mono uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Parity</span>
+              <h2 class="text-base font-semibold text-slate-900 mt-1">Offers are financially equivalent after commute deductions</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Both packages deliver identical net value after out-of-pocket transit and time opportunity cost.</p>
+            </div>
+            <div class="font-mono text-xl font-bold text-slate-800 tabular-nums">${formatCurrency(resA.effectiveCompensation)}</div>
+          </div>
+        `;
+      } else {
+        const accentBorder = aIsBetter ? 'border-sky-600' : 'border-indigo-600';
+        const accentBadge = aIsBetter 
+          ? 'text-sky-700 bg-sky-50 border-sky-200' 
+          : 'text-indigo-700 bg-indigo-50 border-indigo-200';
+        const accentLeaderText = aIsBetter ? 'text-sky-700' : 'text-indigo-700';
+
+        winnerBanner.className = `bg-white rounded-lg border border-slate-200 border-l-4 ${accentBorder} p-5 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.03)]`;
+        winnerBanner.innerHTML = `
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono font-semibold uppercase tracking-wider ${accentBadge} px-2 py-0.5 rounded border">
+                  Higher Effective Compensation
+                </span>
+                <span class="text-xs text-slate-400 font-mono">+${pctLead}% net premium</span>
+              </div>
+              <h2 class="text-lg font-bold text-slate-900 mt-1.5 tracking-tight">
+                <span class="${accentLeaderText}">${winnerName}</span> leads by <span class="font-mono tabular-nums text-slate-950">${formatCurrency(leadAmount)}</span> / year in true value
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">
+                Calculated after deducting $20/day direct transit expense and $25/hr opportunity cost of commute hours.
+              </p>
+            </div>
+
+            <div class="flex items-center gap-6 self-stretch md:self-auto justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 shrink-0">
+              <div class="text-right font-mono">
+                <div class="text-[10px] uppercase tracking-wider text-slate-400 font-sans">Net Value Gap</div>
+                <div class="text-2xl font-bold text-slate-900 tabular-nums">+${formatCurrency(leadAmount)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Executive narrative insight
+      let narrative = "";
+      if (resA.salary > resB.salary && resA.effectiveCompensation < resB.effectiveCompensation) {
+        narrative = `
+          <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Salary Illusion Identified
+          </div>
+          <p class="text-slate-600">
+            <strong>${nameA}</strong> offers +${formatCurrency(resA.salary - resB.salary)} higher gross salary, but commuting overhead burns through <strong>${formatCurrency(resA.totalFriction - resB.totalFriction)}</strong> in cash and lost personal hours. <strong>${nameB}</strong> yields <strong>+${formatCurrency(leadAmount)}/yr</strong> in effective compensation.
+          </p>`;
+      } else if (resB.salary > resA.salary && resB.effectiveCompensation < resA.effectiveCompensation) {
+        narrative = `
+          <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Salary Illusion Identified
+          </div>
+          <p class="text-slate-600">
+            <strong>${nameB}</strong> advertises +${formatCurrency(resB.salary - resA.salary)} higher base pay, but adds <strong>${formatNumber(resB.annualCommuteHours - resA.annualCommuteHours)} commute hours</strong> and <strong>+${formatCurrency(resB.annualTransitCost - resA.annualTransitCost)}</strong> in transit expenses. <strong>${nameA}</strong> yields <strong>+${formatCurrency(leadAmount)}/yr</strong> in net value.
+          </p>`;
+      } else {
+        const hourlyWinner = resA.effectiveHourly >= resB.effectiveHourly ? nameA : nameB;
+        const hrDiff = Math.abs(resA.effectiveHourly - resB.effectiveHourly).toFixed(2);
+        narrative = `
+          <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+            Committed Hourly Yield
+          </div>
+          <p class="text-slate-600">
+            When accounting for all hours dedicated to the position (work + commute), <strong>${hourlyWinner}</strong> returns <strong>+$${hrDiff}/hr</strong> higher effective compensation ($${Math.max(resA.effectiveHourly, resB.effectiveHourly).toFixed(2)}/hr vs $${Math.min(resA.effectiveHourly, resB.effectiveHourly).toFixed(2)}/hr).
+          </p>
+        `;
+      }
+
+      insightCard.innerHTML = narrative;
+      insightCard.className = "p-3.5 rounded border border-slate-200 bg-slate-50/70 text-xs leading-relaxed space-y-1.5";
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('breakdownChart').getContext('2d');
+      comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Offer A', 'Offer B'],
+          datasets: [
+            {
+              label: 'Net Effective Compensation',
+              data: [0, 0],
+              backgroundColor: '#0f172a', // Deep slate / navy
+              borderRadius: 2,
+              barPercentage: 0.55,
+            },
+            {
+              label: 'Transit Out-of-Pocket ($20/day)',
+              data: [0, 0],
+              backgroundColor: '#94a3b8', // Refined slate gray
+              borderRadius: 2,
+              barPercentage: 0.55,
+            },
+            {
+              label: 'Commute Time Opportunity ($25/hr)',
+              data: [0, 0],
+              backgroundColor: '#f59e0b', // Refined warm amber
+              borderRadius: 2,
+              barPercentage: 0.55,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Inter', size: 12, weight: '600' },
+              bodyFont: { family: 'JetBrains Mono', size: 11 },
+              padding: 10,
+              cornerRadius: 4,
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                }
+              }
+            },
+            legend: {
+              display: false // Using clean HTML legend
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: {
+                font: { family: 'Inter', size: 11, weight: '600' },
+                color: '#334155'
+              }
+            },
+            y: {
+              stacked: true,
+              ticks: {
+                font: { family: 'JetBrains Mono', size: 10 },
+                color: '#64748b',
+                callback: function(value) {
+                  return '$' + (value / 1000) + 'k';
+                }
+              },
+              grid: {
+                color: '#f1f5f9',
+                drawBorder: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChart(resA, resB) {
+      if (!comparisonChart) return;
+      
+      const labelA = offerAName.value.trim() || 'Offer A';
+      const labelB = offerBName.value.trim() || 'Offer B';
+
+      comparisonChart.data.labels = [labelA, labelB];
+      comparisonChart.data.datasets[0].data = [
+        Math.max(0, resA.effectiveCompensation),
+        Math.max(0, resB.effectiveCompensation)
+      ];
+      comparisonChart.data.datasets[1].data = [
+        resA.annualTransitCost,
+        resB.annualTransitCost
+      ];
+      comparisonChart.data.datasets[2].data = [
+        resA.annualTimeValue,
+        resB.annualTimeValue
+      ];
+
+      comparisonChart.update();
+    }
+
+    function applyPreset(type) {
+      if (type === 'remoteVsOffice') {
+        salaryA.value = 110000;
+        remoteA.value = 4;
+        commuteA.value = 40;
+        offerAName.value = "Offer A (Remote / 1-Day In)";
+
+        salaryB.value = 130000;
+        remoteB.value = 1;
+        commuteB.value = 90;
+        offerBName.value = "Offer B (Hybrid / 4-Days In)";
+      } else if (type === 'equalPayHybrid') {
+        salaryA.value = 120000;
+        remoteA.value = 4;
+        commuteA.value = 50;
+        offerAName.value = "Hybrid (4 Days Remote)";
+
+        salaryB.value = 120000;
+        remoteB.value = 0;
+        commuteB.value = 50;
+        offerBName.value = "Office (5 Days On-Site)";
+      } else if (type === 'superCommuter') {
+        salaryA.value = 115000;
+        remoteA.value = 3;
+        commuteA.value = 40;
+        offerAName.value = "Local Firm";
+
+        salaryB.value = 160000;
+        remoteB.value = 0;
+        commuteB.value = 150;
+        offerBName.value = "Metro Super-Commute";
+      }
+      updateDashboard();
+    }
+
+    function toggleDetails() {
+      const details = document.getElementById('detailsContent');
+      const icon = document.getElementById('detailsToggleIcon');
+      if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        icon.textContent = '▲ Hide specification';
+      } else {
+        details.classList.add('hidden');
+        icon.textContent = '▼ Show specification';
+      }
+    }
+
+    // Modal & Assumptions listeners
+    assumptionsBtn.addEventListener('click', () => {
+      inputDailyCost.value = config.dailyCost;
+      inputTimeVal.value = config.timeRate;
+      inputWeeks.value = config.workingWeeks;
+      assumptionsModal.classList.remove('hidden');
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+      assumptionsModal.classList.add('hidden');
+    });
+
+    saveAssumptionsBtn.addEventListener('click', () => {
+      config.dailyCost = Math.max(0, parseFloat(inputDailyCost.value) || 0);
+      config.timeRate = Math.max(0, parseFloat(inputTimeVal.value) || 0);
+      config.workingWeeks = Math.max(1, parseInt(inputWeeks.value, 10) || 50);
+      assumptionsModal.classList.add('hidden');
+      updateDashboard();
+    });
+
+    resetAssumptionsBtn.addEventListener('click', () => {
+      config.dailyCost = 20;
+      config.timeRate = 25;
+      config.workingWeeks = 50;
+      inputDailyCost.value = 20;
+      inputTimeVal.value = 25;
+      inputWeeks.value = 50;
+      assumptionsModal.classList.add('hidden');
+      updateDashboard();
+    });
+
+    presetBtn.addEventListener('click', () => {
+      config.dailyCost = 20;
+      config.timeRate = 25;
+      config.workingWeeks = 50;
+      salaryA.value = 110000;
+      remoteA.value = 4;
+      commuteA.value = 40;
+      offerAName.value = "Offer A (Remote / Hybrid Baseline)";
+
+      salaryB.value = 130000;
+      remoteB.value = 1;
+      commuteB.value = 90;
+      offerBName.value = "Offer B (Higher Salary / In-Office)";
+      updateDashboard();
+    });
+
+    // Slider & Input change handlers
+    [salaryA, remoteA, commuteA, salaryB, remoteB, commuteB].forEach(input => {
+      input.addEventListener('input', updateDashboard);
+    });
+
+    [offerAName, offerBName].forEach(input => {
+      input.addEventListener('input', () => {
+        const valSalaryA = parseFloat(salaryA.value);
+        const valRemoteA = parseInt(remoteA.value, 10);
+        const valCommuteA = parseFloat(commuteA.value);
+        const valSalaryB = parseFloat(salaryB.value);
+        const valRemoteB = parseInt(remoteB.value, 10);
+        const valCommuteB = parseFloat(commuteB.value);
+
+        const resA = calculateOffer(valSalaryA, valRemoteA, valCommuteA);
+        const resB = calculateOffer(valSalaryB, valRemoteB, valCommuteB);
+
+        updateComparisonBanner(resA, resB);
+        updateChart(resA, resB);
+      });
+    });
+
+    // Initialize application on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      updateDashboard();
+    });
+  </script>
+</body>
+</html>
